@@ -70,7 +70,7 @@ df = spark \
     .load('/Volumes/databricks_catalog/s3_test/healthcare_1/csv files/csv/2024_05_08T04_08_53Z/allergies.csv') \
      
 """
-    create dictionary for all options to pass to the options function
+    create dictionary for all options to pass to the option function
 """
 
 display(df)
