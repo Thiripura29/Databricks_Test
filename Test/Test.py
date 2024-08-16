@@ -19,11 +19,22 @@ df = spark \
     .load('/Volumes/databricks_catalog/s3_test/healthcare_1/csv files/csv/2024_05_08T04_08_53Z/allergies.csv') \
      
 """
-    show the test
+    CSV reader will return Data frame as an output
+    We can use display() to display the data
+    show() to display the data in tabular format
 """
 
 display(df)
 
+
 # COMMAND ----------
 
 display(df)
+"""
+We can also use display() to display  the data in tabular format
+
+"""
+
+# COMMAND ----------
+
+show.(df)
