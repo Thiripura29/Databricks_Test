@@ -74,3 +74,71 @@ df = spark \
 """
 
 display(df)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC printSchema() function is used to dispaly the schema of the dataframe.
+# MAGIC A schema in spark displays the structure of the data . Which includes the data type of the coloumn
+# MAGIC
+
+# COMMAND ----------
+
+df.printSchema()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Print schema in json format
+
+# COMMAND ----------
+
+df.schema.json()
+
+# COMMAND ----------
+
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType,TimestampType,BooleanType,DoubleType
+"""
+No of jobs reduced - Important
+To reduce the number of job, use schema for each file
+Optimize the code by using schema
+schema contains three main things structtype , structfield and stringtype
+"""
+schema = StructType([
+    StructField("START", TimestampType(), True), 
+    StructField("STOP", StringType(), True),
+    StructField("PATIENT", StringType(), True),
+    StructField("ENCOUNTER", StringType(), True),
+    StructField("CODE", DoubleType(), True),
+    StructField("SYSTEM", StringType(), True),
+    StructField("DESCRIPTION", StringType(), True),
+    StructField("TYPE", StringType(), True),
+    StructField("CATEGORY", StringType(), True),
+    StructField("REACTION1", IntegerType(), True),
+    StructField("DESCRIPTION1", StringType(), True),
+    StructField("SEVERITY1", StringType(), True),
+    StructField("REACTION2", IntegerType(), True),
+    StructField("DESCRIPTION2", StringType(), True),
+    StructField("SEVERITY2", IntegerType(), True),
+          
+                     ])
+df = spark \
+    .read \
+    .format('csv') \
+    .option("header",True) \
+    .schema(schema) \
+    .load('/Volumes/databricks_catalog/s3_test/healthcare_1/csv files/csv/2024_05_08T04_08_53Z/allergies.csv') \
+
+display(df)
+
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Display record in text format
+
+# COMMAND ----------
+
+display(spark.read.format('text').load('/Volumes/databricks_catalog/s3_test/healthcare_1/csv files/csv/2024_05_08T04_08_53Z/allergies.csv'))
