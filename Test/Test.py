@@ -16,7 +16,7 @@ df = spark \
     .format('csv') \
     .option("header",True) \
     .option("inferSchema",True) \
-    .load('/Volumes/databricks_catalog/s3_test/healthcare_1/csv files/csv/2024_05_08T04_08_53Z/allergies.csv') \
+    .load('/Volumes/databricks_catalog/heathcare/heathcare1/csv files/csv/2024_05_08T04_08_53Z/allergies.csv') \
      
 """
     CSV reader will return Data frame as an output
@@ -67,7 +67,7 @@ df = spark \
     .read \
     .format('csv') \
     .options(**Options) \
-    .load('/Volumes/databricks_catalog/s3_test/healthcare_1/csv files/csv/2024_05_08T04_08_53Z/allergies.csv') \
+    .load('/Volumes/databricks_catalog/heathcare/heathcare1/csv files/csv/2024_05_08T04_08_53Z/allergies.csv') \
      
 """
     create dictionary for all options to pass to the option function
@@ -128,10 +128,37 @@ df = spark \
     .format('csv') \
     .option("header",True) \
     .schema(schema) \
-    .load('/Volumes/databricks_catalog/s3_test/healthcare_1/csv files/csv/2024_05_08T04_08_53Z/allergies.csv') \
+    .load('/Volumes/databricks_catalog/heathcare/heathcare1/csv files/csv/2024_05_08T04_08_53Z/allergies.csv') \
 
 display(df)
 
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC select () - select one or more columns from dataframe, Col()- create column object represent column name in dataframe
+# MAGIC alias()-rename the column name in dataframe
+
+# COMMAND ----------
+
+from pyspark.sql.functions import col
+df = spark \
+    .read \
+    .format('csv') \
+    .option("header",True) \
+    .option("inferSchema",True) \
+    .load('/Volumes/databricks_catalog/heathcare/heathcare1/csv files/csv/2024_05_08T04_08_53Z/allergies.csv') \
+
+good_record_df1=df.select(col("START"),col("STOP"),col("PATIENT"),col("ENCOUNTER"))
+display(good_record_df1)
+#-------------------------------------------
+good_record_df2=df.select(col("START"),col("STOP"),col("PATIENT").alias("PATIENTNAME"),col("ENCOUNTER"))
+display(good_record_df2)
+
+#--------------------------------------------
+good_record_df3=df.select("START","PATIENT")
+display(good_record_df3)
 
 
 # COMMAND ----------
@@ -141,4 +168,64 @@ display(df)
 
 # COMMAND ----------
 
-display(spark.read.format('text').load('/Volumes/databricks_catalog/s3_test/healthcare_1/csv files/csv/2024_05_08T04_08_53Z/allergies.csv'))
+display(spark.read.format('text').load('/Volumes/databricks_catalog/heathcare/heathcare1/csv files/csv/2024_05_08T04_08_53Z/allergies.csv'))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC _corrupt_record = Column is used to find the good and bad record in dataframe . This column captures rows which does not parse correctly
+# MAGIC
+
+# COMMAND ----------
+
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType,TimestampType,BooleanType,DoubleType
+"""
+No of jobs reduced - Important
+To reduce the number of job, use schema for each file
+Optimize the code by using schema
+schema contains three main things structtype , structfield and stringtype
+"""
+schema = StructType([
+    StructField("START", TimestampType(), True), 
+    StructField("STOP", StringType(), True),
+    StructField("PATIENT", StringType(), True),
+    StructField("ENCOUNTER", StringType(), True),
+    StructField("CODE", DoubleType(), True),
+    StructField("SYSTEM", StringType(), True),
+    StructField("DESCRIPTION", StringType(), True),
+    StructField("TYPE", StringType(), True),
+    StructField("CATEGORY", StringType(), True),
+    StructField("REACTION1", IntegerType(), True),
+    StructField("DESCRIPTION1", StringType(), True),
+    StructField("SEVERITY1", StringType(), True),
+    StructField("REACTION2", IntegerType(), True),
+    StructField("DESCRIPTION2", StringType(), True),
+    StructField("SEVERITY2", BooleanType(),  True),
+    StructField("_corrupt_record", StringType(), True),
+          
+                     ])
+df_wrong_schema = spark \
+    .read \
+    .format('csv') \
+    .option("header",True) \
+    .schema(schema) \
+    .load('/Volumes/databricks_catalog/heathcare/heathcare1/allergies (1).csv') \
+
+good_records_df = df_wrong_schema.where("_corrupt_record is null")
+bad_records_df = df_wrong_schema.where("_corrupt_record is not null")
+display(bad_records_df)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC select () - select one or more columns from dataframe,
+# MAGIC Col()- create column object represent column name in dataframe  
+# MAGIC alias()-rename the column name in dataframe
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
