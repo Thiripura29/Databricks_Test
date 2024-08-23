@@ -277,3 +277,42 @@ display(Location)
 
 from pyspark.sql.functions import lit
 
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC rescued 
+
+# COMMAND ----------
+
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType,TimestampType,BooleanType,DoubleType
+#spark.conf.set("spark.databricks.sql.rescuedDataColumn.filepath.enabled", "false")
+schema = StructType([StructField("emp_id", IntegerType(), True),
+                     StructField("name", StringType(), True),
+                     StructField("dept", StringType(), True),
+                     StructField("salary", DoubleType(), True)
+                     ])
+df=spark.read.format('csv')\
+                   .option("header",True)\
+                    .schema(schema)\
+                    .option("rescuedDataColumn","_rescued_data")\
+                    .load('/Volumes/databricks_catalog/heathcare/heathcare1/Employee.csv')
+df_good_record=df.where("_rescued_data is null")  
+df_bad_record=df.where("_rescued_data is not null")
+display(df)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Reads files under a provided location and returns the data in tabular form.
+# MAGIC
+# MAGIC Supports reading JSON, CSV, XML, TEXT, BINARYFILE, PARQUET, AVRO, and ORC file formats. Can detect the file format automatically and infer a unified schema across all files.
+# MAGIC
+# MAGIC Syntax
+# MAGIC
+# MAGIC read_files(path [, option_key => option_value ] [...])
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from read_files('/Volumes/databricks_catalog/heathcare/heathcare1/Employee.csv')
