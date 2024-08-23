@@ -173,7 +173,10 @@ display(spark.read.format('text').load('/Volumes/databricks_catalog/heathcare/he
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC _corrupt_record = Column is used to find the good and bad record in dataframe . This column captures rows which does not parse correctly
+# MAGIC
+# MAGIC select () - select one or more columns from dataframe,
+# MAGIC Col()- create column object represent column name in dataframe  
+# MAGIC alias()-rename the column name in dataframe
 # MAGIC
 
 # COMMAND ----------
@@ -218,14 +221,59 @@ display(bad_records_df)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC select () - select one or more columns from dataframe,
-# MAGIC Col()- create column object represent column name in dataframe  
-# MAGIC alias()-rename the column name in dataframe
+# MAGIC _corrupt_record = Column is used to find the good and bad record in dataframe . This column captures rows which does not parse correctly
 
 # COMMAND ----------
 
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType,TimestampType,BooleanType,DoubleType
+schema = StructType([StructField("emp_id", IntegerType(), True),StructField("name", StringType(), True),StructField("dept", StringType(), True),StructField("salary", DoubleType(), True),StructField("_corrupt_record", StringType(), True)])
+df=spark.read.format('csv').option("header",True).schema(schema).load('/Volumes/databricks_catalog/heathcare/heathcare1/Employee.csv')
+df_good_record=df.where("_corrupt_record is null")  
+df_bad_record=df.where("_corrupt_record is not null")
+display(df_good_record)
 
 
 # COMMAND ----------
 
+columnlist=df_good_record.columns
+ignorecolumns=['_corrupt_record']
+df_good_record=df_good_record.select([column for column in columnlist if column not in ignorecolumns])
+display(df_good_record)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC withColumn() - This function is used to add, replace, or transform a column in a DataFrame. It allows you to create a new DataFrame with additional or modified columns based on existing ones.
+# MAGIC
+# MAGIC returns a new DataFrame with the specified modifications, leaving the original DataFrame unchanged.
+
+# COMMAND ----------
+
+from pyspark.sql.functions import col
+salary_percentage=df_good_record.withColumn('salary_percentage',col('salary')/100)
+display(salary_percentage)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC lit(123) creates a Column with a literal value of 123. This literal value can be any Python value (string, integer, float, boolean, etc.)
+# MAGIC
+# MAGIC withColumnRenamed() function is used to rename a column in a DataFrame. It allows you to create a new DataFrame with the specified column renamed.
+
+# COMMAND ----------
+
+from pyspark.sql.functions import lit
+Location=df_good_record.withColumn('Newlocation',lit("Chennai"))
+display(Location)
+Location=Location.withColumnRenamed('Newlocation','OfficeLocation')
+display(Location)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+
+# COMMAND ----------
+
+from pyspark.sql.functions import lit
 
