@@ -67,7 +67,7 @@ df = spark \
     .read \
     .format('csv') \
     .options(**Options) \
-    .load('/Volumes/databricks_catalog/heathcare/heathcare1/csv files/csv/2024_05_08T04_08_53Z/allergies.csv') \
+    .load('/Volumes/databricks_catalog/heathcare/heathcare1/csv files/csv/2024_05_08T04_08_53Z/claims_transactions_illegal.csv') \
      
 """
     create dictionary for all options to pass to the option function
@@ -315,4 +315,116 @@ display(df)
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC select * from read_files('/Volumes/databricks_catalog/heathcare/heathcare1/Employee.csv')
+# MAGIC create or replace table Employee1 as 
+# MAGIC (select * from read_files('/Volumes/databricks_catalog/heathcare/heathcare1/Employee.csv',
+# MAGIC schema => 'emp_id int, Name string,DEPARTMENT string, Salary double',
+# MAGIC format => 'CSV',
+# MAGIC header =>true,
+# MAGIC mode=>'PERMISSIVE',
+# MAGIC rescuedDatacolumn =>'_rescued_column') );
+# MAGIC
+# MAGIC select * from Employee1
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC drop table if exists heathcare.heathcare1.Employee1;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC create or replace table Emp_badrecord as (select * from Employee1 where _rescued_column is not null);
+# MAGIC create or replace table Emp_goodrecord as (select * from Employee1 where _rescued_column is null)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Imp : Spark.sql is gateway between pyspark SQl and SQL
+# MAGIC
+
+# COMMAND ----------
+
+badrecord=spark.sql("select * from Emp_badrecord")
+display(badrecord)
+goodrecord=spark.sql("select * from Emp_goodrecord")
+display(goodrecord)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Create catelog and schema
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC create catalog if not exists lakehouse_dev
+# MAGIC managed location 's3://hgs3-bucket/lakehouse/'
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC create schema if not exists lakehouse_dev.AnalyticsDB
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC -- Create the table without specifying the location
+# MAGIC create external table if not exists lakehouse_dev.AnalyticsDB.claims_transactions (
+# MAGIC ID string,
+# MAGIC CLAIMID string,
+# MAGIC CHARGEID integer,
+# MAGIC PATIENTID string,
+# MAGIC TYPE string,
+# MAGIC AMOUNT double,
+# MAGIC METHOD string,
+# MAGIC FROMDATE timestamp,
+# MAGIC TODATE timestamp,
+# MAGIC PLACEOFSERVICE string,
+# MAGIC PROCEDURECODE double,
+# MAGIC MODIFIER1 string,
+# MAGIC MODIFIER2 string,
+# MAGIC DIAGNOSISREF1 integer,
+# MAGIC DIAGNOSISREF2 integer,
+# MAGIC DIAGNOSISREF3 integer,
+# MAGIC DIAGNOSISREF4 integer,
+# MAGIC UNITS integer,
+# MAGIC DEPARTMENTID integer,
+# MAGIC NOTES string,
+# MAGIC UNITAMOUNT double,
+# MAGIC TRANSFEROUTID integer,
+# MAGIC TRANSFERTYPE string,
+# MAGIC PAYMENTS double,
+# MAGIC ADJUSTMENTS integer,
+# MAGIC TRANSFERS double,
+# MAGIC OUTSTANDING double,
+# MAGIC APPOINTMENTID string,
+# MAGIC LINENOTE string,
+# MAGIC PATIENTINSURANCEID string,
+# MAGIC FEESCHEDULEID integer,
+# MAGIC PROVIDERID string,
+# MAGIC SUPERVISINGPROVIDERID string,
+# MAGIC _c33 string,
+# MAGIC _c34 string
+# MAGIC ) 
+# MAGIC USING csv
+# MAGIC options (createdBy = 'Thiripura',createdOn = '2024-05-08T04:08:53Z',path='s3://hgs3-bucket/2024_05_08T04_08_53Z/claims_transactions_illegal.csv')
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC describe table Employee1
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC describe table extended Employee1
+
+# COMMAND ----------
+
+extendedschema=spark.sql("describe table Employee1")
+display(extendedschema)
+
+# COMMAND ----------
+
+extendedschema1=spark.sql("describe table extended Employee1")
+display(extendedschema1)
