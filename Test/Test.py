@@ -407,7 +407,18 @@ display(goodrecord)
 # MAGIC _c34 string
 # MAGIC ) 
 # MAGIC USING csv
-# MAGIC options (createdBy = 'Thiripura',createdOn = '2024-05-08T04:08:53Z',path='s3://hgs3-bucket/2024_05_08T04_08_53Z/claims_transactions_illegal.csv')
+# MAGIC location 's3://hgs3-bucket/test/claims_transactions_illegal.csv'
+# MAGIC tblproperties (createdBy='Thiripura',createdDate='2024-08-27')
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from lakehouse_dev.analyticsdb.claims_transactions
+# MAGIC
 
 # COMMAND ----------
 
