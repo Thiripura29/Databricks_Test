@@ -100,11 +100,11 @@ all_attributes1=non_corrupt_df.selectExpr("attributes.*").select("age","AGE_MONT
 display(all_attributes1)
 
 #display all the symptoms from dataframe
-all_attributes1=non_corrupt_df.selectExpr("symptoms.*")
+all_attributes1=non_corrupt_df.selectExpr("attributes.*")
 display(all_attributes1)
 
 #select all columns from dataframe
-all_column=non_corrupt_df.selectExpr("coverage","symptoms","attributes","record")
+all_column=non_corrupt_df.selectExpr("coverage","symptoms","record","attributes.*")
 display(all_column)
 
 # COMMAND ----------
@@ -115,8 +115,57 @@ display(all_column)
 
 from pyspark.sql.functions import col
 
-required_columns=["age","AGE_MONTHS","mend_encounter_reason","first_name","last_name","gender","race","ethnicity","zip","dob","ssn","state","county","city","address","phone","email","language","marital_status","employment_status","employment_status_code","employment_status_date","employment_status_code_date","employment_status_reason","employment_status_reason_code"]
-existing_columns=[col for col in non_corrupt_df.columns if col in required_columns]
-data_frame2=all_column.selectExpr(*existing_columns)
+required_columns=["age","age_months","mend_encounter_reason","first_name","last_name","marital_status","zip","address","county","city","state","C19_SCHEDULED_FIRST_SHOT"]
+#existing_columns=[col for col in non_corrupt_df.columns if col in required_columns]
+data_frame2=all_column.selectExpr(required_columns)
+display(data_frame2)
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC CASE WHEN condition
+
+# COMMAND ----------
+
+from pyspark.sql.functions import expr
+data_frame2=data_frame2.withColumn("age_Group",expr("CASE WHEN age < 18 THEN 'Minor'"+
+                                                      "WHEN age BETWEEN 18 AND 64 THEN 'Adult'"+
+                                                      "WHEN age > 64 THEN 'Senior'"+
+                                                      "ELSE 'Unknown'"+
+                                                      " END"))
+display(data_frame2)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC DATE FUNCTION
+
+# COMMAND ----------
+
+from pyspark.sql.functions import expr,when,from_unixtime
+
+#concert C19_SCHEDULED_FIRST_SHOT from milliseconds to seconds and convert to timestamp 
+data_frame2=data_frame2.withColumn("C19_SCHEDULED_FIRST_SHOT_seconds",from_unixtime(col("C19_SCHEDULED_FIRST_SHOT")/1000))
+data_frame2=data_frame2.withColumn("C19_SCHEDULED_FIRST_SHOT_timestamp",from_unixtime(data_frame2.C19_SCHEDULED_FIRST_SHOT_seconds).cast("timestamp"))
+
+#Extract date, month ,year from C19_SCHEDULED_FIRST_SHOT_timestamp
+data_frame2=data_frame2.withColumn("date",data_frame2.C19_SCHEDULED_FIRST_SHOT_seconds.cast("date"))
+data_frame2=data_frame2.withColumn("day",expr("dayofmonth(C19_SCHEDULED_FIRST_SHOT_seconds)"))
+data_frame2=data_frame2.withColumn("month",expr("month(C19_SCHEDULED_FIRST_SHOT_seconds)"))
+data_frame2=data_frame2.withColumn("year",expr("year(C19_SCHEDULED_FIRST_SHOT_seconds)"))
+data_frame2=data_frame2.withColumn("hour",expr("hour(C19_SCHEDULED_FIRST_SHOT_seconds)"))
+data_frame2=data_frame2.withColumn("minute",expr("minute(C19_SCHEDULED_FIRST_SHOT_seconds)"))
+data_frame2=data_frame2.withColumn("second",expr("second(C19_SCHEDULED_FIRST_SHOT_seconds)"))
+
+#Extreact day of year,week of year,last day
+data_frame2=data_frame2.withColumn("day_of_year",expr("dayofyear(C19_SCHEDULED_FIRST_SHOT_seconds)"))
+data_frame2=data_frame2.withColumn("week_of_year",expr("weekofyear(C19_SCHEDULED_FIRST_SHOT_seconds)"))
+data_frame2=data_frame2.withColumn("last_day",expr("last_day(C19_SCHEDULED_FIRST_SHOT_seconds)"))
+
+#Calculate the next day of C19_SCHEDULED_FIRST_SHOT_timestamp and subtract 2 days from it
+
+data_frame2=data_frame2.withColumn("next_day",expr("date_add(C19_SCHEDULED_FIRST_SHOT_seconds,8)"))
+data_frame2=data_frame2.withColumn("Subtractdate",expr("date_sub(C19_SCHEDULED_FIRST_SHOT_seconds,2)"))
 display(data_frame2)
 
