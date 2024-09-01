@@ -115,7 +115,7 @@ display(all_column)
 
 from pyspark.sql.functions import col
 
-required_columns=["age","age_months","mend_encounter_reason","first_name","last_name","marital_status","zip","address","county","city","state","C19_SCHEDULED_FIRST_SHOT"]
+required_columns=["age","age_months","mend_encounter_reason","first_name","last_name","marital_status","zip","address","county","city","state","C19_SCHEDULED_FIRST_SHOT","immunizations"]
 #existing_columns=[col for col in non_corrupt_df.columns if col in required_columns]
 data_frame2=all_column.selectExpr(required_columns)
 display(data_frame2)
@@ -169,3 +169,35 @@ data_frame2=data_frame2.withColumn("next_day",expr("date_add(C19_SCHEDULED_FIRST
 data_frame2=data_frame2.withColumn("Subtractdate",expr("date_sub(C19_SCHEDULED_FIRST_SHOT_seconds,2)"))
 display(data_frame2)
 
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC User defined function
+
+# COMMAND ----------
+
+from pyspark.sql.functions import expr,udf,col
+from pyspark.sql.types import StringType, ArrayType
+#Approach #1
+
+#Create a function to create unique immunization from dictionary
+def get_immunization(immunizations):
+#Convert the immunization column to dictionary
+    immunizations=immunizations.asDict()
+    
+#Create a empty set to store  unique immunizaton value
+    immunization_list=set()
+#iterate to the dictonary and add unique immunizarion value to the list
+    for k,v in immunizations.items():
+      
+                  immunization_list.add(k)
+#convert the set to the list and return 
+    return list (immunization_list)
+
+#create a UDF (user Defined Dunction) to apply the get_immunization function to the immunization column
+immunization_df=udf(get_immunization,ArrayType(StringType()))
+
+#create a new column immunization_array by applying the udf to the immunization column
+transformed_df=data_frame2.withColumn("immunization_array",immunization_df(col("immunizations")))
+display(transformed_df)
