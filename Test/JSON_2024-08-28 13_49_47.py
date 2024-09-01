@@ -56,3 +56,67 @@ def identify_corrupted_records(df):
         return None,df
 
 corrupted_record_df,non_corrupt_df=identify_corrupted_records(read_df)
+
+# COMMAND ----------
+
+if corrupted_record_df:
+    print(corrupted_record_df.count())
+else:
+    print(non_corrupt_df.count())
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Create a temporary view
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC create or replace temporary view temp_view
+# MAGIC using JSON
+# MAGIC options
+# MAGIC (
+# MAGIC   path 's3://hgs3-bucket/JSON/Allan198_Gottlieb798_20a1b578-95bd-6d4d-0945-55f228f50077.json',
+# MAGIC   multiline 'true',
+# MAGIC   inferschema 'true',
+# MAGIC   header 'true'
+# MAGIC );
+# MAGIC
+# MAGIC select * from temp_view;
+# MAGIC
+
+# COMMAND ----------
+
+#Display the selected attributes from the dataframe
+non_crpt_df=non_corrupt_df.select("attributes.age","attributes.AGE_MONTHS","attributes.Acute Myeloid Leukemia for PCOR Research Module","attributes.mend_encounter_reason")
+display(non_crpt_df )
+
+#Display the selected attributes from dataframe with renamed column
+non_crpt_df1=non_corrupt_df.selectExpr("attributes.age as age","attributes.AGE_MONTHS as age_month","attributes.mend_encounter_reason as mend_encounter")
+display(non_crpt_df1 )
+
+#display all the attributes from dataframe
+all_attributes1=non_corrupt_df.selectExpr("attributes.*").select("age","AGE_MONTHS","mend_encounter_reason")
+display(all_attributes1)
+
+#display all the symptoms from dataframe
+all_attributes1=non_corrupt_df.selectExpr("symptoms.*")
+display(all_attributes1)
+
+#select all columns from dataframe
+all_column=non_corrupt_df.selectExpr("coverage","symptoms","attributes","record")
+display(all_column)
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+from pyspark.sql.functions import col
+
+required_columns=["age","AGE_MONTHS","mend_encounter_reason","first_name","last_name","gender","race","ethnicity","zip","dob","ssn","state","county","city","address","phone","email","language","marital_status","employment_status","employment_status_code","employment_status_date","employment_status_code_date","employment_status_reason","employment_status_reason_code"]
+existing_columns=[col for col in non_corrupt_df.columns if col in required_columns]
+data_frame2=all_column.selectExpr(*existing_columns)
+display(data_frame2)
+
