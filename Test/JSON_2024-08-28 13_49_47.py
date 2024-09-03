@@ -8,7 +8,7 @@ read_df=spark\
        .read\
        .format("json")\
        .option("multiline", "true")\
-        .load("s3://hgs3-bucket/JSON/Allan198_Gottlieb798_20a1b578-95bd-6d4d-0945-55f228f50077.json")
+        .load("s3://s3-databrick-test/JSON/Allan198_Gottlieb798_20a1b578-95bd-6d4d-0945-55f228f50077.json")
 
 display(read_df )
 
@@ -76,7 +76,7 @@ else:
 # MAGIC using JSON
 # MAGIC options
 # MAGIC (
-# MAGIC   path 's3://hgs3-bucket/JSON/Allan198_Gottlieb798_20a1b578-95bd-6d4d-0945-55f228f50077.json',
+# MAGIC   path 's3://s3-databrick-test/JSON/Allan198_Gottlieb798_20a1b578-95bd-6d4d-0945-55f228f50077.json',
 # MAGIC   multiline 'true',
 # MAGIC   inferschema 'true',
 # MAGIC   header 'true'
@@ -190,7 +190,8 @@ def get_immunization(immunizations):
     immunization_list=set()
 #iterate to the dictonary and add unique immunizarion value to the list
     for k,v in immunizations.items():
-      
+        # if (v) >0:
+    
                   immunization_list.add(k)
 #convert the set to the list and return 
     return list (immunization_list)
@@ -200,4 +201,148 @@ immunization_df=udf(get_immunization,ArrayType(StringType()))
 
 #create a new column immunization_array by applying the udf to the immunization column
 transformed_df=data_frame2.withColumn("immunization_array",immunization_df(col("immunizations")))
+display(transformed_df)
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+from pyspark.sql.functions import expr,udf,col
+from pyspark.sql.types import StringType, ArrayType
+#Approach #2
+
+#Create a function to create unique immunization from dictionary
+@udf(ArrayType(StringType()))
+def get_immunization(immunizations):
+#Convert the immunization column to dictionary
+    immunizations=immunizations.asDict()
+    
+#Create a empty set to store  unique immunizaton value
+    immunization_list=set()
+#iterate to the dictonary and add unique immunizarion value to the list
+    for k,v in immunizations.items():
+        if len(v) >0:
+    
+                  immunization_list.add(k)
+#convert the set to the list and return 
+    return list (immunization_list)
+
+#create a UDF (user Defined Dunction) to apply the get_immunization function to the immunization column
+#immunization_df=udf(get_immunization,ArrayType(StringType()))
+
+#create a new column immunization_array by applying the udf to the immunization column
+transformed_df=data_frame2.withColumn("immunization_array",get_immunization(col("immunizations")))
+display(transformed_df)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC access python UDF funtion as spark sql
+
+# COMMAND ----------
+
+#Register the get_immunization with spark
+spark.udf.register("get_immunization_sql", get_immunization)
+
+data_frame2.createOrReplaceGlobalTempView(name='data_frame2')
+
+df=spark.sql("select get_immunization_sql(immunizations) as immunization_Array,* from global_temp.data_frame2")
+display(df)
+                   
+
+# COMMAND ----------
+
+#SQL query to select all the columns from dataframe
+
+sql_code="""
+select array_size(immunization_Array) as immunization_size ,* from 
+
+(select get_immunization_sql(immunizations) as immunization_Array ,* from global_temp.data_frame2)
+
+"""
+df=spark.sql(sql_code)
+display(df)
+
+# COMMAND ----------
+
+#SQL query to select all the columns from dataframe
+"""
+array_size - Returns number of element in array
+to_json - Returns the JSON representation of the array . Converts the column to JSON string{Struct type ,array type or map type. } Throw an exception if any other type is added
+array_distict - Remove 
+json_object_keys - Return all the keys from the JSON string and return array <String>
+"""
+
+sql_code="""
+select array_size(immunization_Array) as immunization_size ,* from 
+
+(select array_distinct(json_object_keys(to_json(immunizations))) as immunization_Array ,* from global_temp.data_frame2)
+
+"""
+df=spark.sql(sql_code)
+display(df)
+
+# COMMAND ----------
+
+from pyspark.sql.functions import expr,udf,col
+from pyspark.sql.types import StringType, ArrayType,IntegerType,MapType,StructType
+#Approach #2
+
+json_schema=ArrayType(ArrayType(IntegerType()))
+#Create a function to create unique immunization from dictionary
+@udf(json_schema)
+def get_immunization_values(immunizations):
+#Convert the immunization column to dictionary
+    immunizations=immunizations.asDict()
+    
+#Create a empty set to store  unique immunizaton value
+    immunization_value_list=[]
+#iterate to the dictonary and add unique immunizarion value to the list
+    for k,v in immunizations.items():
+              
+             immunization_value_list.append([int(item) for item in v])
+#convert the set to the list and return 
+    return list (immunization_value_list)
+
+#create a UDF (user Defined Dunction) to apply the get_immunization function to the immunization column
+#immunization_df=udf(get_immunization,ArrayType(StringType()))
+
+#create a new column immunization_array by applying the udf to the immunization column
+transformed_df=data_frame2.withColumn("immunization_array",get_immunization_values(col("immunizations")))
+display(transformed_df)
+
+# COMMAND ----------
+
+from pyspark.sql.functions import expr,udf,col
+from pyspark.sql.types import StringType, ArrayType,IntegerType,MapType,StructType
+#Approach #2
+
+udf_return_type=ArrayType(MapType(StringType(),ArrayType(IntegerType())))
+#Create a function to create unique immunization from dictionary
+@udf(udf_return_type)
+def get_immunization_values(immunizations):
+#Convert the immunization column to dictionary
+    immunizations=immunizations.asDict()
+    
+#Create a empty set to store  unique immunizaton value
+    immunization_value_list=[]
+#iterate to the dictonary and add unique immunizarion value to the list
+    for k,v in immunizations.items():
+              
+             immunization_value_list.append({k:[int(item) for item in v]})
+#convert the set to the list and return 
+    return list (immunization_value_list)
+
+#create a UDF (user Defined Dunction) to apply the get_immunization function to the immunization column
+#immunization_df=udf(get_immunization,ArrayType(StringType()))
+
+#create a new column immunization_array by applying the udf to the immunization column
+transformed_df=data_frame2.withColumn("immunization_array",get_immunization_values(col("immunizations")))
 display(transformed_df)
