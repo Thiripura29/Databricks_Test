@@ -318,6 +318,8 @@ def get_immunization_values(immunizations):
 transformed_df=data_frame2.withColumn("immunization_array",get_immunization_values(col("immunizations")))
 display(transformed_df)
 
+spark.udf.register("get_immunization_udf",get_immunization_values)
+
 # COMMAND ----------
 
 from pyspark.sql.functions import expr,udf,col
@@ -346,3 +348,29 @@ def get_immunization_values(immunizations):
 #create a new column immunization_array by applying the udf to the immunization column
 transformed_df=data_frame2.withColumn("immunization_array",get_immunization_values(col("immunizations")))
 display(transformed_df)
+
+spark.udf.register("get_immunization_json_udf",get_immunization_values)
+
+# COMMAND ----------
+
+from pyspark.sql import functions as F
+
+df=data_frame2.withColumn(
+    "immunization_values",
+     F.expr("get_immunization_udf(immunizations)")
+     ).withColumn(
+     "Flatten_immunization_array",
+     F.expr("flatten(immunization_values)")
+     ).withColumn(
+     "immunization_converted_map",
+     F.expr("get_immunization_json_udf(immunizations)")
+     ).withColumn(
+         "immunization_values_flatten",F.expr("transform(Flatten_immunization_array, x -> from_unixtime(x))")
+     ).withColumn(
+         "immunization_transformed_values",
+         F.expr("""
+                transform(immunization_converted_map, 
+                outeritem -> transform_values(
+                    outeritem, (k,v) -> transform(v,x -> from_unixtime(x)))
+                    )"""))
+display(df)
