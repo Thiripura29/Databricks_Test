@@ -374,3 +374,93 @@ df=data_frame2.withColumn(
                     outeritem, (k,v) -> transform(v,x -> from_unixtime(x)))
                     )"""))
 display(df)
+
+# COMMAND ----------
+
+from datetime import datetime
+
+aList=[
+{"covid19": [-823289293, 1595910707]},
+{"dtap": []},
+{"flu": [1433271859, 2090566195, -819572173, 565256755, -1740081613, 249547315, -2055791053, -66162125, 1923466803, -381871565, 1607757363, -697581005, 1292047923, -1013290445, 976338483, -1328999885, 660629043, -1644709325, 344919603, 809239091, 1273558579, 1737878067, -2092769741, -1628450253, -1164130765, 1237323315, 316813875, 1947111987, -1988524493, 1104435, 1990733363, -314605005, 1675023923, -630314445, 1359314483, -946023885, -770794957, -1261733325]}
+]
+
+output_list = []
+for outer_item in aList:
+    output_dict = {}
+    for k,v in outer_item.items():
+        tmp_lst = []
+        for inner_item in v:
+            tmp_lst.append(datetime.fromtimestamp(inner_item).strftime('%Y-%m-%d %H:%M:%S'))
+        output_dict[k] = tmp_lst
+    output_list.append(output_dict)
+        
+print(output_list)
+
+
+# COMMAND ----------
+
+#creating dataframe using list of rows
+list_of_rows=[
+(1,"Thiripura",'[{"year":2024,"pass_perentage" : "80.0%"},{"year":2023,"pass_perentage" : "85.2%"}]','[{"2024":"80.0%"},{"2023":"85.2"}]',["XYZ1","XYZ2"]),
+(2,"Sathya",'[{"year":2024,"pass_perentage" : "90.0%"},{"year":2023,"pass_perentage" : "95.2%"}]','[{"2024":"90.0%"},{"2023":"95.2"}]',["XYZ2","XYZ3"]),
+(3,"Nethra",'[{"year":2024,"pass_perentage" : "95.0%"},{"year":2023,"pass_perentage" : "85.6%"}]','[{"2024":"95.0%"},{"2023":"85.6"}]',["XYZ1","XYZ2"]),
+]  
+
+#create dataframe using spark.createDataFrame()
+df4=spark.createDataFrame(list_of_rows,schema="student_no int,student_name string,yearly_percentage string, percentage_map string,student_list array<string>")
+display(df4)
+
+# COMMAND ----------
+
+#create temporary view
+
+df4.createOrReplaceTempView("student_Detail2")
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from student_Detail2
+
+# COMMAND ----------
+
+sql_code="""
+select *,from_json(yearly_percentage,'ARRAY<STRUCT<year:INT,pass_perentage:STRING>>') as year_pass_percentage,
+from_json(percentage_map,'ARRAY<MAP<STRING,STRING>>') as percentage_map_1
+from student_Detail2
+"""
+
+df1=spark.sql(sql_code)
+display(df1)
+
+# COMMAND ----------
+
+
+df1.createOrReplaceTempView("student_Detail3")
+
+# COMMAND ----------
+
+#explode transforms an array into multiple rows
+sql_code=""" 
+            select *,
+            --explode transforms an array into multiple rows
+            explode(year_pass_percentage) as yearly_percentage_struct ,
+            --posexplode transform array into multiple rows along with precision position
+            posexplode(year_pass_percentage) as (pos,year_percentage_struct),
+            --explode_outer tranforms array into multiple rows and prodcuts null values if array has null or blank
+            explode_outer(year_pass_percentage) as yearly_percentage_struct_outer,
+            --poseexplode_outer tranforms array into multiple rows along with precison and prodcuts null values if array --has --null or blank
+            posexplode_outer(year_pass_percentage) as (pos,yearly_percentage_struct_outer),
+            --inline explodes transform array of struct into multiple rows
+            inline(year_pass_percentage) as (year,percentage)
+            from student_Detail3
+
+""" 
+
+explode_df=spark.sql(sql_code)
+display(explode_df)
+
+
+# COMMAND ----------
+
+
