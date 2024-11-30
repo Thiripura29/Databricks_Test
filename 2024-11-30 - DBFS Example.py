@@ -29,6 +29,39 @@ display(df)
 
 # COMMAND ----------
 
+df.limit(1).collect()
+
+# COMMAND ----------
+
+df1=spark.read.csv("/FileStore/tables/patients.csv", header=True, inferSchema=True)
+
+# COMMAND ----------
+
+display(df1)
+
+# COMMAND ----------
+
+df1.columns
+
+# COMMAND ----------
+
+df.dtypes
+
+# COMMAND ----------
+
+df.schema
+
+# COMMAND ----------
+
+#get row and column count
+df.count(), len(df.columns)
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
 # Create a view or table
 
 temp_table_name = "patients_csv"
