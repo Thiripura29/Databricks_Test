@@ -58,7 +58,18 @@ df.count(), len(df.columns)
 
 # COMMAND ----------
 
+#Filtering and sorting
+from pyspark.sql.functions import col
+df_filetered=df.filter((col('gender') == 'F') & (col('income') > 10000))
+display(df_filetered)
 
+# COMMAND ----------
+
+#sorting 
+df_sort=df_filetered.orderBy(col('income').desc())
+df_sort_asc=df_filetered.orderBy(col('income'))
+display(df_sort)
+display(df_sort_asc)
 
 # COMMAND ----------
 
